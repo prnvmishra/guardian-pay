@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1f7a5a">
+<title>Guardian Pay: family check</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Devanagari:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/base.css">
+<link rel="stylesheet" href="/assets/pay.css">
+<style>
+  .g-head { display: flex; align-items: center; gap: 12px; padding: 20px; border-bottom: 1px solid var(--line); background: var(--card); }
+  .g-head p { margin: 0; }
+  .g-head small { color: var(--muted); }
+  .idle { text-align: center; padding: 70px 24px; color: var(--ink-2); }
+  .idle .shield { margin: 0 auto 16px; width: 64px; height: 64px; }
+  .req { padding: 22px 20px; }
+  .req-lead { font-size: 22px; font-weight: 600; line-height: 1.25; margin: 0 0 6px; }
+  .req-amt { font-size: 40px; font-weight: 700; letter-spacing: -.02em; margin: 10px 0 0; }
+  .req-to { color: var(--ink-2); margin: 0 0 16px; }
+  .score { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 12px; background: var(--sindoor-soft); color: var(--sindoor); font-weight: 600; margin-bottom: 6px; }
+  .score b { font-size: 26px; }
+  .tip { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius-m); padding: 12px 14px; margin-top: 16px; font-size: 15px; }
+  .actions { display: grid; gap: 10px; margin-top: 18px; }
+  .done { padding: 60px 24px; text-align: center; }
+  .ai-card { margin-top: 16px; background: var(--card); border: 1px solid var(--line); border-radius: var(--radius-m); padding: 12px 14px; }
+  .ai-card h3 { margin: 0 0 6px; font-size: 14px; color: var(--muted); font-weight: 500; }
+  .ai-card p { margin: 0; }
+  .ai-card .risk-high { color: var(--sindoor); font-weight: 600; }
+  .talk { list-style: none; padding: 0; margin: 8px 0 0; font-family: "IBM Plex Sans Devanagari", var(--font); font-size: 15px; }
+  .talk li { padding: 4px 0; }
+  .talk b { font-weight: 600; }
+</style>
+</head>
+<body>
+<main class="phone">
+  <header class="g-head">
+    <span class="avatar" aria-hidden="true">NS</span>
+    <div>
+      <p><b>Neha Sharma</b></p>
+      <small>Family contact for Suresh Sharma</small>
+    </div>
+  </header>
+
+  <section id="idle" class="idle">
+    <span class="shield" aria-hidden="true">
+      <svg viewBox="0 0 24 24" width="30" height="30"><path d="M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5l-8-3Z" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="m8.5 12 2.4 2.4 4.6-4.8" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>
+    </span>
+    <p>Nothing needs you right now.</p>
+    <p class="hi" style="color:var(--muted)">जब पापा कोई संदिग्ध पेमेंट करेंगे, वो यहाँ दिखेगा।</p>
+  </section>
+
+  <section id="req" class="req" hidden>
+    <p class="req-lead" id="reqLead"></p>
+    <p class="req-amt" id="reqAmt"></p>
+    <p class="req-to" id="reqTo"></p>
+    <div class="score">Risk score <b id="reqScore"></b></div>
+    <ul class="reasons" id="reqReasons"></ul>
+    <div id="reqAi"></div>
+    <p class="tip">Call your father on his usual number before approving. If he sounds scared or says an officer is on the line, stop the payment.</p>
+    <div class="actions">
+      <button class="btn danger" id="stopBtn">Stop this payment</button>
+      <button class="btn ghost" id="okBtn">It's genuine, let it go</button>
+    </div>
+    <p class="error" id="reqErr" role="alert"></p>
+  </section>
+
+  <section id="done" class="done" hidden>
+    <div class="result-mark ok" aria-hidden="true">
+      <svg viewBox="0 0 48 48" width="56" height="56"><path d="m14 25 7 7 14-15" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+    <h2 class="result-title" id="doneTitle"></h2>
+    <p class="result-sub" id="doneSub"></p>
+  </section>
+</main>
+<script type="module">
+import { api, el, listen, rupees } from "/assets/common.js";
+const $ = (id) => document.getElementById(id);
+let current = null;
+
+function view(name) {
+  for (const id of ["idle", "req", "done"]) $(id).hidden = id !== name;
+}
+
+function showRequest(t) {
+  current = t;
+  $("reqLead").textContent = "Papa is trying to send money and our system paused it.";
+  $("reqAmt").textContent = rupees(t.amount);
+  $("reqTo").textContent = `to ${t.payee.name}, a/c ${t.payee.masked}`;
+  $("reqScore").textContent = t.score;
+  const items = [...t.rules.map((r) => ({ en: r, hi: "" })), ...t.reasons].slice(0, 4);
+  $("reqReasons").replaceChildren(...items.map((r) => el("li", {}, r.en, r.hi ? el("small", {}, r.hi) : null)));
+  const ai = [];
+  const s = t.saathi;
+  if (s && s.turns.length) {
+    const said = s.turns.filter((x) => x.role === "user").slice(-3);
+    ai.push(el("div", { class: "ai-card" },
+      el("h3", {}, "What Papa told Saathi"),
+      s.risk === "high" ? el("p", { class: "risk-high" }, "Saathi thinks someone is pressuring him.") : null,
+      said.length ? el("ul", { class: "talk" }, ...said.map((x) => el("li", {}, el("b", {}, "Papa: "), x.text))) : el("p", {}, "He hasn't answered yet.")));
+  }
+  if (t.ai_summary && t.ai_summary.summary) {
+    ai.push(el("div", { class: "ai-card" }, el("h3", {}, "Summary"), el("p", {}, t.ai_summary.summary)));
+  }
+  $("reqAi").replaceChildren(...ai);
+  $("reqErr").textContent = "";
+  view("req");
+}
+
+function closed(t) {
+  if (!current || t.id !== current.id) return;
+  current = null;
+  const paid = t.status === "paid";
+  $("doneTitle").textContent = paid ? "Payment released" : "Payment stopped";
+  $("doneSub").textContent = paid
+    ? `${rupees(t.amount)} went to ${t.payee.name}.`
+    : `${rupees(t.amount)} stays in Papa's account. Give him a call.`;
+  view("done");
+  setTimeout(() => { if (!current) view("idle"); }, 8000);
+}
+
+async function decide(approve) {
+  if (!current) return;
+  try {
+    const res = await api(`/api/txn/${current.id}/guardian`, { approve });
+    closed(res.txn);
+  } catch (err) {
+    $("reqErr").textContent = err.message;
+  }
+}
+$("stopBtn").addEventListener("click", () => decide(false));
+$("okBtn").addEventListener("click", () => decide(true));
+
+const waiting = (t) => t.source === "live" && (t.status === "held" || t.status === "awaiting_guardian");
+
+listen((msg) => {
+  if (msg.type === "snapshot") {
+    const open = msg.txns.filter(waiting).pop();
+    if (open) showRequest(open);
+    return;
+  }
+  if (msg.type === "reset") { current = null; view("idle"); return; }
+  if (!msg.txn) return;
+  if (waiting(msg.txn)) showRequest(msg.txn);
+  else closed(msg.txn);
+});
+</script>
+</body>
+</html>

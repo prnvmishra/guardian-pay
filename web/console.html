@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Guardian Pay console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Devanagari:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/base.css">
+<link rel="stylesheet" href="/assets/console.css">
+</head>
+<body>
+<header class="bar">
+  <div class="brand">
+    <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><path d="M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5l-8-3Z" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="m8.5 12 2.4 2.4 4.6-4.8" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>
+    <div>
+      <h1>Guardian Pay</h1>
+      <p>Coercion check on every payment, before the money moves</p>
+    </div>
+  </div>
+  <div class="engine" id="engine">Connecting…</div>
+  <div class="bar-actions">
+    <button class="tbtn" id="simBtn" aria-pressed="true">Pause simulated traffic</button>
+    <button class="tbtn" id="resetBtn">Reset demo</button>
+  </div>
+</header>
+
+<section class="pulse" aria-label="Every payment scored in the last few minutes">
+  <div class="pulse-stats" id="stats"></div>
+  <canvas id="pulse" height="150" role="img" aria-label="Bars show each payment's risk score; taller is riskier"></canvas>
+</section>
+
+<main class="grid">
+  <section class="feed" aria-label="Live payments">
+    <div class="feed-head">
+      <div>
+        <h2>Payments as they happen</h2>
+        <p class="feed-sub">Phone payments are real input from the app. Other rows are simulated customers so the flag can be shown at scale; pause them anytime.</p>
+      </div>
+      <div class="filters" role="group" aria-label="Filter">
+        <button class="chip on" data-filter="all">All</button>
+        <button class="chip" data-filter="risky">Paused or blocked</button>
+        <button class="chip" data-filter="live">From the phone</button>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Time</th><th>Customer</th><th>To</th><th class="num">Amount</th><th>Score</th><th>Decision</th><th class="num">Took</th></tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+      <p class="empty" id="empty">Waiting for the first payment…</p>
+    </div>
+  </section>
+
+  <aside class="side">
+    <section class="panel detail" id="detail" aria-live="polite">
+      <p class="panel-empty">Pick a payment to see why the engine decided what it did.</p>
+    </section>
+
+    <section class="panel flags">
+      <h2>Accounts flagged by customers</h2>
+      <div id="flags"></div>
+    </section>
+
+    <section class="panel kit">
+      <h2>Try it on your phone</h2>
+      <div class="kit-links">
+        <a class="kit-link" id="payLink" href="/pay" target="_blank" rel="noopener">
+          <span class="qr" id="qrPay"></span>
+          <span><b>Customer app</b><small>Suresh Sharma, 66</small></span>
+        </a>
+        <a class="kit-link" id="guardLink" href="/guardian" target="_blank" rel="noopener">
+          <span class="qr" id="qrGuard"></span>
+          <span><b>Family contact</b><small>Neha, his daughter</small></span>
+        </a>
+      </div>
+      <div class="script">
+        <p>The “officer” on the call sends this account over WhatsApp:</p>
+        <div class="copy-row">
+          <code id="muleAcct">5010 0447 1229 06</code>
+          <button class="tbtn small" data-copy="50100447122906">Copy</button>
+        </div>
+        <p class="muted">Name R K Enterprises, amount ₹6,50,000. Paste it, switch apps once or twice, break the FD when asked.</p>
+      </div>
+    </section>
+  </aside>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" defer></script>
+<script type="module" src="/assets/console.js"></script>
+</body>
+</html>

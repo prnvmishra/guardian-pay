@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#14213d">
+<title>Guardian Pay</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Devanagari:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/base.css">
+<link rel="stylesheet" href="/assets/pay.css">
+</head>
+<body>
+<main class="phone" id="app" aria-live="polite">
+
+  <!-- home -->
+  <section class="screen" data-screen="home">
+    <header class="top">
+      <div>
+        <p class="greet">Namaste,</p>
+        <h1 class="name" id="custName">…</h1>
+      </div>
+      <span class="shield" title="Protected by Guardian Pay" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="22" height="22"><path d="M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5l-8-3Z" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="m8.5 12 2.4 2.4 4.6-4.8" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>
+      </span>
+    </header>
+
+    <div class="money">
+      <div class="money-row">
+        <span>Savings</span>
+        <strong id="balance">…</strong>
+      </div>
+      <div class="money-row soft">
+        <span>Fixed deposit</span>
+        <span id="fd">…</span>
+      </div>
+    </div>
+
+    <h2 class="section-title">Send money</h2>
+    <ul class="payees" id="payees"></ul>
+    <button class="btn ghost wide" id="newPayeeBtn">Pay a new account</button>
+    <button class="btn ghost wide" id="checkHomeBtn">Check a suspicious message</button>
+
+    <p class="footnote">Guardian Pay watches for signs that someone is pushing you to pay. Your family contact is <b id="guardianName">…</b>.</p>
+  </section>
+
+  <!-- new payee -->
+  <section class="screen" data-screen="newpayee" hidden>
+    <button class="back" data-back="home" aria-label="Back">
+      <svg viewBox="0 0 24 24" width="24" height="24"><path d="M15 5 8 12l7 7" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+    </button>
+    <h2 class="screen-title">Pay a new account</h2>
+    <label class="field">
+      <span>Account number</span>
+      <input id="acct" inputmode="numeric" autocomplete="off" placeholder="e.g. 5010 0447 1229 06">
+    </label>
+    <label class="field">
+      <span>Account holder name</span>
+      <input id="acctName" autocomplete="off" placeholder="Name as per bank">
+    </label>
+    <label class="field">
+      <span>IFSC</span>
+      <input id="ifsc" autocomplete="off" placeholder="e.g. HDFC0001234" maxlength="11">
+    </label>
+    <button class="btn ghost wide check-entry" type="button" id="checkFromPayee">Got this account in a message? Check it first</button>
+    <p class="check-done" id="checkBadge" hidden></p>
+    <p class="error" id="newPayeeErr" role="alert"></p>
+    <button class="btn primary wide" id="newPayeeNext">Continue</button>
+  </section>
+
+  <!-- amount -->
+  <section class="screen" data-screen="amount" hidden>
+    <button class="back" data-back="home" aria-label="Back">
+      <svg viewBox="0 0 24 24" width="24" height="24"><path d="M15 5 8 12l7 7" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+    </button>
+    <div class="payee-head">
+      <span class="avatar" id="amtAvatar"></span>
+      <div>
+        <p class="payee-name" id="amtName"></p>
+        <p class="payee-sub" id="amtSub"></p>
+      </div>
+    </div>
+    <label class="amount-box">
+      <span class="sr">Amount in rupees</span>
+      <span class="rupee" aria-hidden="true">₹</span>
+      <input id="amount" inputmode="numeric" autocomplete="off" placeholder="0">
+    </label>
+    <p class="words" id="amtWords"></p>
+    <p class="error" id="amountErr" role="alert"></p>
+    <button class="btn primary wide" id="amountNext">Continue</button>
+  </section>
+
+  <!-- confirm -->
+  <section class="screen" data-screen="confirm" hidden>
+    <button class="back" data-back="amount" aria-label="Back">
+      <svg viewBox="0 0 24 24" width="24" height="24"><path d="M15 5 8 12l7 7" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+    </button>
+    <h2 class="screen-title">Check before you pay</h2>
+    <dl class="summary">
+      <div><dt>To</dt><dd id="cfName"></dd></div>
+      <div><dt>Account</dt><dd id="cfAcct"></dd></div>
+      <div><dt>Amount</dt><dd id="cfAmt" class="big"></dd></div>
+    </dl>
+    <p class="words" id="cfWords"></p>
+    <p class="error" id="payErr" role="alert"></p>
+    <button class="btn primary wide" id="payBtn">Pay now</button>
+  </section>
+
+  <!-- success -->
+  <section class="screen center" data-screen="paid" hidden>
+    <div class="result-mark ok" aria-hidden="true">
+      <svg viewBox="0 0 48 48" width="56" height="56"><path d="m14 25 7 7 14-15" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+    <h2 class="result-title" id="paidTitle"></h2>
+    <p class="result-sub" id="paidSub"></p>
+    <button class="btn ghost wide" data-back="home">Back to home</button>
+  </section>
+
+  <!-- caution sheet lives on top of confirm -->
+  <div class="sheet-wrap" id="cautionSheet" hidden>
+    <div class="sheet caution" role="dialog" aria-modal="true" aria-labelledby="cautionTitle">
+      <h2 id="cautionTitle">Take a second look</h2>
+      <p class="hi">इस पेमेंट में कुछ बातें अलग दिख रही हैं।</p>
+      <ul class="reasons" id="cautionReasons"></ul>
+      <div class="sheet-actions">
+        <button class="btn ghost" id="cautionCancel">Cancel payment</button>
+        <button class="btn primary" id="cautionPay">Pay anyway</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- message checker -->
+  <div class="sheet-wrap" id="checkSheet" hidden>
+    <div class="sheet tall" role="dialog" aria-modal="true" aria-labelledby="checkTitle">
+      <div class="sheet-top">
+        <h2 id="checkTitle">Check a message</h2>
+        <button class="icon-btn dark" id="checkClose" aria-label="Close">
+          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+      <div id="checkForm2">
+        <p class="muted-p">Paste what they sent on WhatsApp or SMS, or add a screenshot. AI reads it for scam signs.</p>
+        <textarea id="checkText" rows="5" maxlength="4000" placeholder="Paste the message here"></textarea>
+        <div class="shot-row">
+          <label class="btn ghost shot-btn">
+            <input type="file" id="checkImage" accept="image/png,image/jpeg,image/webp" hidden>
+            Add screenshot
+          </label>
+          <span class="shot-name" id="shotName"></span>
+        </div>
+        <p class="error" id="checkErr" role="alert"></p>
+        <button class="btn primary wide" id="checkRun">Check message</button>
+      </div>
+      <div id="checkResult" hidden>
+        <div class="verdict-box" id="vBox">
+          <p class="v-title" id="vTitle"></p>
+          <p class="v-type" id="vType"></p>
+        </div>
+        <ul class="reasons" id="vFlags"></ul>
+        <p class="v-advice" id="vAdviceHi"></p>
+        <p class="v-advice muted-p" id="vAdviceEn"></p>
+        <p class="muted-p small" id="vSource"></p>
+        <button class="btn primary wide" id="checkDone">Done</button>
+        <button class="btn link wide" id="checkAgain">Check another message</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- not enough balance -->
+  <div class="sheet-wrap" id="fdSheet" hidden>
+    <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="fdTitle">
+      <h2 id="fdTitle">Not enough in savings</h2>
+      <p id="fdText"></p>
+      <div class="sheet-actions">
+        <button class="btn ghost" id="fdChange">Change amount</button>
+        <button class="btn primary" id="fdBreak">Break FD and pay</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- the pause -->
+  <section class="screen pause" data-screen="pause" hidden>
+    <div class="ring-wrap">
+      <svg class="ring" viewBox="0 0 120 120" aria-hidden="true">
+        <circle cx="60" cy="60" r="52" class="ring-bg"/>
+        <circle cx="60" cy="60" r="52" class="ring-fg" id="ringFg"/>
+      </svg>
+      <div class="ring-text"><span id="ringTime">2:00</span><small>on hold</small></div>
+    </div>
+    <h2 class="pause-title">Let's stop for two minutes</h2>
+    <p class="pause-hindi hi">रुकिए। कोई आपको जल्दी पैसे भेजने को कह रहा है तो ये ज़रूर पढ़ें।</p>
+    <p class="pause-amt" id="pauseAmt"></p>
+    <ul class="reasons light" id="pauseReasons"></ul>
+
+    <section class="saathi" id="saathi" aria-label="Talk to Saathi">
+      <div class="saathi-head">
+        <span class="saathi-badge" aria-hidden="true">स</span>
+        <div>
+          <p class="saathi-name">Saathi</p>
+          <p class="saathi-sub" id="saathiSub">Your bank's assistant</p>
+        </div>
+        <button class="icon-btn" id="speakToggle" aria-pressed="true" title="Read replies aloud">
+          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4Z" fill="currentColor"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          <span class="sr">Read replies aloud</span>
+        </button>
+      </div>
+      <ol class="chat" id="chat" aria-live="polite"></ol>
+      <div class="quick" id="quick">
+        <button type="button" class="chip-btn" data-say="हाँ">हाँ</button>
+        <button type="button" class="chip-btn" data-say="नहीं">नहीं</button>
+      </div>
+      <form class="composer" id="composer">
+        <button type="button" class="mic" id="micBtn" aria-label="Speak your answer">
+          <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3" fill="currentColor"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        </button>
+        <input id="saathiInput" autocomplete="off" placeholder="बोलिए या लिखिए…" maxlength="600" aria-label="Your answer">
+        <button class="send" type="submit" aria-label="Send">
+          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M4 12 20 4l-6 16-3-7-7-1Z" fill="currentColor"/></svg>
+        </button>
+      </form>
+      <p class="error light" id="saathiErr" role="alert"></p>
+
+      <div class="verdict" id="saathiVerdict" hidden>
+        <p class="verdict-title" id="verdictTitle"></p>
+        <p class="verdict-text" id="verdictText"></p>
+        <button class="btn light wide" id="verdictCancel">Cancel this payment</button>
+        <button class="btn link wide" id="verdictAsk">Ask Neha to decide</button>
+      </div>
+      <button class="btn link wide" type="button" id="useQuestions">Answer three quick questions instead</button>
+    </section>
+
+    <form id="checkForm" class="check" hidden>
+      <p class="check-lead">Answer honestly. Nobody else sees this.</p>
+      <fieldset>
+        <legend>Is someone on a call telling you to make this payment?</legend>
+        <div class="yn"><label><input type="radio" name="on_call" value="yes" required><span>Yes</span></label><label><input type="radio" name="on_call" value="no"><span>No</span></label></div>
+      </fieldset>
+      <fieldset>
+        <legend>Did they ask you to keep it secret from family or the bank?</legend>
+        <div class="yn"><label><input type="radio" name="keep_secret" value="yes" required><span>Yes</span></label><label><input type="radio" name="keep_secret" value="no"><span>No</span></label></div>
+      </fieldset>
+      <fieldset>
+        <legend>Did anyone say you'll be arrested, or that they are police, CBI, customs or RBI?</legend>
+        <div class="yn"><label><input type="radio" name="threatened" value="yes" required><span>Yes</span></label><label><input type="radio" name="threatened" value="no"><span>No</span></label></div>
+      </fieldset>
+      <button class="btn light wide" type="submit">Send answers</button>
+      <button class="btn link wide" type="button" id="useSaathi">Talk to Saathi instead</button>
+      <button class="btn link wide" type="button" id="pauseCancel">Cancel this payment</button>
+    </form>
+
+    <div class="waiting" id="waiting" hidden>
+      <p class="waiting-title">Asked <b id="waitName"></b> to confirm</p>
+      <p class="waiting-sub">The payment goes through as soon as they approve, or by itself when the timer ends.</p>
+      <button class="btn link wide" id="waitCancel">Cancel this payment</button>
+    </div>
+  </section>
+
+  <!-- stopped / blocked -->
+  <section class="screen center safe" data-screen="safe" hidden>
+    <div class="result-mark safe-mark" aria-hidden="true">
+      <svg viewBox="0 0 24 24" width="52" height="52"><path d="M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5l-8-3Z" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>
+    </div>
+    <h2 class="result-title" id="safeTitle">Your money is safe</h2>
+    <p class="result-sub" id="safeSub"></p>
+    <div class="facts">
+      <p>Police, CBI, ED or RBI never arrest anyone on a video call and never ask for money to “verify” it.</p>
+      <p class="hi">कोई भी सरकारी अधिकारी फ़ोन पर पैसे नहीं मांगता।</p>
+    </div>
+    <a class="btn danger wide" href="tel:1930">Call 1930 cyber helpline</a>
+    <a class="btn ghost wide" href="https://cybercrime.gov.in" target="_blank" rel="noopener">Report at cybercrime.gov.in</a>
+    <button class="btn link wide" data-back="home">Back to home</button>
+  </section>
+
+  <details class="signals" id="signals">
+    <summary>What the bank sees</summary>
+    <dl id="sigList"></dl>
+  </details>
+</main>
+<script type="module" src="/assets/pay.js"></script>
+</body>
+</html>
