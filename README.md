@@ -5,6 +5,8 @@ Built for the IBM Z Datathon 2026, theme: *Real-Time AI for Critical Decisions*.
 
 **Demo video:** https://youtu.be/BxpoHiEtRCo
 
+**Live on IBM LinuxONE (s390x):** https://148-100-99-32.sslip.io (bank console) · https://148-100-99-32.sslip.io/pay (customer app) · https://148-100-99-32.sslip.io/guardian (family contact)
+
 ## The problem
 
 In a "digital arrest" scam, someone posing as police, CBI or customs keeps a person on a call for hours and talks them into sending their savings. The victim logs in on their own phone and enters their own OTP and PIN. To today's fraud checks it looks like a normal payment, so it clears in milliseconds. Victims are often retired, and the money is spread across mule accounts within minutes.
